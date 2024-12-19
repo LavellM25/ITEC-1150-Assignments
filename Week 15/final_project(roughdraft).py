@@ -51,7 +51,7 @@ def main():
 
         elif menu_choice == "Submit Order":
             # Submit the order and save to JSON file
-            if pizzas:   # Check if there are pizzas in the current order.
+            if pizzas:  # Check if there are pizzas in the current order.
                 total_order_cost = sum(pizza_cost for unused_value, pizza_cost in pizzas)
 
                 # Step 2: Calculate the sales tax (7%)
@@ -88,91 +88,126 @@ def main():
                 # If no pizzas have been added, display an error message.
                 print("\nYou cannot submit an empty order.")
 
-            # Ask the user if they want to restart the program
-            if restart_order():
-                # If the user selects "yes," restart the program from the beginning.
-                print("\nRestarting the program.......Loading in 3...2...1  ")
-                main()  # Calls the main() function recursively to restart the program.
-
-            else:
-                # If the user selects "no," exit the program gracefully.
-                print("Exiting the program. Thank you!")
-                break  # Break out of the main loop to end the program.
+        # Ask the user if they want to restart the program
+        if not restart_order():
+            print("\nExiting the program. Thank you!")
+            break  # break the loop and end the loop.
+        # If the user selects "yes," restart the program from the beginning.
+        else:
+            print("\nRestarting the program.......Loading in 3...2...1  ")
 
 
 def load_ingredients(file_path):
     """
-    Step 1) The program will read the ingredients.json file, The program reads the ingredients.json file using the load_ingredients() function..
+    Step 1) The program will read the ingredients.json file.
     :param file_path: Path to the ingredients file.
-    :return: A tuple containing base options and toppings.
+    :return: Base options and toppings.
     """
-    with open(file_path, 'r') as file:
-        ingredients = json.load(file)
-    return ingredients["base_options"], ingredients["toppings"]
+    try:
+        # Attempt to open the file at the given path in read mode
+        with open(file_path, 'r') as file:
+            # Load the JSON data from the file into the 'ingredients' dictionary
+            ingredients = json.load(file)
+        # Verify if the needed values are there ("base_options" and "toppings") exist in the JSON data
+        if "base_options" not in ingredients or "toppings" not in ingredients:
+            print("Warning: Missing 'base_options' or 'toppings' key in the ingredients file.")
+            # Use .get() to retrieve the needed values
+            base_options = ingredients.get("base_options", [])  # Create an empty list if "base_options" is missing
+            toppings = ingredients.get("toppings", {})  # Create an empty dictionary if "toppings" is missing
+            return base_options, toppings
+            # If both values exist, return their values
+        return ingredients["base_options"], ingredients["toppings"]
+    except FileNotFoundError:
+        # Handle the case where the file does not exist and notify the user
+        print(f"Error: File '{file_path}' not found.")
+    except json.JSONDecodeError:
+        # Handle the case where the file is not a valid JSON format and notify the user
+        print(f"Error: File '{file_path}' contains invalid JSON.")
+
 
 
 def display_menu(base_options, toppings):
     """
-    Display the ingredients and prices in a column-aligned format.
+    Step 2) (Optional) I added a restaurant menu stand that will show users the menu while they are waiting to order.
+    Display the ingredients and prices.
     :param base_options: List of base options with categories and prices.
-    :param toppings: Dictionary of toppings and their prices.
+    :param toppings: List of toppings and their prices.
     """
+    # Header for the menu
     print("\n=============== Pizza Menu ===============")
-    print(f"{'Ingredient':<20} {'Price':>15}")
-    print("-" * 42)
+    print(f"{'Ingredient':<20} {'Price':>15}")  # Ingredients on the left and Prices on the right
+    print("-" * 42)  # Horizontal line break
 
+    # Loop through each category of base options (crust, sauce, cheese)
     for option in base_options:
-        category = option['category'].capitalize()
-        print(f"\n{category}:")
-        print("*" * 42)
-        for name, price in option['options'].items():
-            print(f"{name:<20}           ${price:>8.2f}")
+        category = option['category'].capitalize()  # Capitalize the category name
+        print(f"\n{category}:")  # Display the category (ex. "Crust", "Cheese",etc.)
+        print("*" * 42)  # Horizontal line break
 
+        # Loop through each item in the category's options and display its name and price
+        for name, price in option['options'].items():  # Ex: Cheese type mozzarella, price is $2.00
+            print(f"{name:<20}           ${price:>8.2f}")  # Format the name on the left and price on the right.
+
+    # Toppings section header
     print("\nToppings:")
-    print("*" * 42)
-    for topping, price in toppings.items():
-        print(f"{topping:<20}           ${price:>8.2f}")
+    print("*" * 42)   # Horizontal line break
 
+    # Loop through each topping and display its name and price
+    for topping, price in toppings.items():  # Ex: Pepperoni is $2.00
+        print(f"{topping:<20}           ${price:>8.2f}")  # Format the topping name on the left and price on the right.
+
+    # Footer line for the menu
     print("=" * 42)
+
 
 
 def get_num_pizzas():
     """
-    Input function to get the number of pizzas from the user.
+    Step 3) Ask the user how many pizzas from the user.
+    User cannot enter a number that is not a whole #, that is a negative # or greater than 25.
     :return: The number of pizzas to order as an integer.
     """
-    return pyip.inputInt("How many pizzas would you like to order? ", min=1)
+    return pyip.inputInt("How many pizzas would you like to order? ", min=1, max=25)
 
 
 def get_pizza_ingredients(base_options, toppings):
     """
-    Gather pizza ingredients and calculate the total cost for one pizza.
+    Step 4) Gather pizza ingredients and calculate the total cost for one pizza.
     Prompts the user to choose crust, sauce, cheese, and toppings.
     """
     ingredients = []  # List to store chosen ingredients with their costs
     total_cost = 0  # Initialize total cost for the pizza
 
-    # Step 1: Select base options (e.g., crust, sauce, cheese)
-    for option in base_options:
-        category = option["category"]
-        choices = option["options"]
-
+    # Step 1: Select base options (ex: crust, sauce, cheese)
+    for option in base_options:  # Loop through each category in the base options
+        category = option["category"]  # Get the specific category if it is picked.
+        choices = option["options"]   # Get the specific options from the ingredients.json file if it is picked.
+        # Step 2a: Prompt the user to choose an option from the category
         choice = pyip.inputMenu(list(choices.keys()), prompt=f"\nChoose a {category}:\n", numbered=True)
+        # Step 2b: Add the chosen option to the ingredients list along with its category and price
         ingredients.append((category.capitalize(), choice, choices[choice]))
+        # Step 2c: Add the price of the chosen option to the total cost
         total_cost = total_cost + choices[choice]
 
-    # Step 2: Select toppings
-    for topping, price in toppings.items():
-        if pyip.inputYesNo(f"Do you want {topping}? (yes/no): ") == "yes":
-            ingredients.append(("Topping", topping, price))
-            total_cost = total_cost + price
-
+    # Step 3: Select toppings
+    # Check if there are available toppings before prompting the user
+    if not toppings:
+        print("\nNo toppings are available.")  # Inform the user if no toppings are provided
+    else:   # Loop through each available topping
+        for topping, price in toppings.items():  # For every topping, ask the user if they want this topping (yes or no)
+            if pyip.inputYesNo(f"Do you want {topping}? (yes/no): ") == "yes":
+                # If the user selects "yes", add the topping to the ingredients list
+                ingredients.append(("Topping", topping, price))
+                # Add the topping's price to the total cost
+                total_cost = total_cost + price
+    # Return the list of selected ingredients and the total cost of the pizza
     return ingredients, total_cost
 
 
 def process_order(num_pizzas, base_options, toppings):
     """
-    Build each pizza and calculate the total order cost.
+    Step 5) Based on the answer of the user in step 3 if they want to add a pizza,
+    I will build x amount of pizza's and calculate the total order cost.
     :param num_pizzas: Number of pizzas to order.
     :param base_options: List of base options with categories and prices.
     :param toppings: Dictionary of toppings and their prices.
@@ -181,43 +216,44 @@ def process_order(num_pizzas, base_options, toppings):
     pizzas = []  # List to store pizzas with their ingredients and costs
     total_order_cost = 0  # Total cost of the order
 
-    for i in range(1, num_pizzas + 1):
-        print(f"\nBuilding pizza #{i}...")
+    # Starts at 1, ends at the smaller value between num_pizzas and 25,
+    # Use min(num_pizzas, 25) so loop never goes 25 times.
+    for i in range(1, min(num_pizzas, 25) + 1):
+        print(f"\nBuilding pizza #{i}...")  # Each iteration represents building one pizza in the index of "i".
+        # Call get_pizza_ingredients() to gather ingredients and cost for a single pizza
         ingredients, pizza_cost = get_pizza_ingredients(base_options, toppings)
+        # Add (.append) the pizza details (ingredients and cost) to the pizzas list to be used later in final order
         pizzas.append((ingredients, pizza_cost))
+        # Add the cost of this pizza to the total order cost
         total_order_cost = total_order_cost + pizza_cost
-
+    # Return the list of pizzas and the total order cost to be used later in final order summary.
     return pizzas, total_order_cost
 
 
 def calculate_total_with_tax(total_order):
     """
-    Calculate the total price after adding 7% sales tax.
+    Step 6 (optional step) Calculate the total price after adding 7% sales tax.
     :param total_order: The total price before tax.
     :return: A tuple containing the tax amount and total price after tax.
     """
     tax_rate = 0.07  # Define the tax rate
-
     # Calculate the tax amount
     tax_amount = total_order * tax_rate
-
     # Calculate the total with tax
     total_with_tax = total_order + tax_amount
-
     # Round the results to two decimal places
     tax_amount = round(tax_amount, 2)
     total_with_tax = round(total_with_tax, 2)
-
     return tax_amount, total_with_tax
 
 
 def calculate_total_with_tip(total_with_tax):
     """
-    Ask the user to select a tip percentage and add it to the total amount.
+    Step 7 (optional)Ask the user to select a tip percentage and add it to the total amount.
     :param total_with_tax: The total price after adding sales tax.
     :return: Total price including the tip.
     """
-    # Define tip choices and display them as a menu
+    # Define tip choices that the user will have to pick from.
     tip_choices = {
         '0%': 0.00,
         '10%': 0.10,
@@ -225,19 +261,15 @@ def calculate_total_with_tip(total_with_tax):
         '30%': 0.30,
         '40%': 0.40
     }
-
     # Use pyip.inputMenu to let the user select a tip percentage directly
     tip_choice = pyip.inputMenu(
         list(tip_choices.keys()),
         prompt="\nSelect a tip percentage:\n", numbered=True)
-
-    # Get the corresponding tip percentage from the dictionary
+    # Get the corresponding tip percentage from the dictionary that is chosen from the user.
     tip_percentage = tip_choices[tip_choice]
-
     # Calculate the tip amount
     tip_amount = total_with_tax * tip_percentage
     tip_amount = round(tip_amount, 2)
-
     # Display a thank-you message if the user tipped.
     if tip_amount > 0:
         print(
@@ -247,107 +279,130 @@ def calculate_total_with_tip(total_with_tax):
     return tip_amount
 
 
+
 def display_order_summary(pizzas, final_total=None, tip_amount=None, tax_amount=None):
     """
-    Display the summary of the pizza order.
+    Step 8) Display the summary of the pizza order.
+    Provides a detailed summary of the user's pizza order, including ingredients, costs, tax, tip, and the final total.
     :param pizzas: List of pizzas with their ingredients and costs.
     :param final_total: Final total cost including tax and tip (optional).
     :param tip_amount: The amount the user tipped (optional, default is 0.00).
     :param tax_amount: Calculate the total order times sales tax (7%).
     """
-    print("\nOrder Summary:")
+
+    print("\n" + "Order Summary:".center(60))  # Header that I want to be center-aligned
+    print("=" * 70)  # Add a horizontal line breaker
+    # Iterate through the list of pizzas to display their details
     for i, (ingredients, pizza_cost) in enumerate(pizzas, start=1):
-        print(f"\nPizza #{i}:")
-        for category, name, price in ingredients:
+        print(f"\nPizza #{i}:")  # Display which pizza in the order which the user ordered, followed with ingredients.
+
+        for category, name, price in ingredients:  # Loop through ingredients of the current pizza
             print(f"{category:<12}     {name:<20}         $ {price:>17.2f}")
-        print("-" * 70)
+            # For each ingredient (like crust, sauce, or topping), display its category, name, and price
+        print("-" * 70)  # Separator for each pizza's subtotal
         print(f"{'Subtotal':<32}              ${pizza_cost:>18.2f}")
-    # Display tax amount
-    print("-" * 70)
+        # Display the subtotal for this pizza, which is the sum of all its ingredients."
+    print("-" * 70)  # Separator line for the total cost
+    # After listing all pizzas, add a separator line to transition into the overall costs like tax and tip.
+
+    # Display tax amount (0.00 if None)
+    tax_amount = tax_amount if tax_amount is not None else 0.00
     print(f"{'Tax Amount':<32}              ${tax_amount:>18.2f}")
 
-    # Display the tip amount
+    # Display the tip amount (0.00 if user did not leave a tip)
+    # If the user added a tip, we include it here. If no tip was given, this section is skipped."
     if tip_amount is not None and tip_amount > 0:
-        print("-" * 70)
         print(f"{'Tip':<32}              ${tip_amount:>18.2f}")
-
-    # Display the final total
-    if final_total is not None:
-        print("=" * 70)
-        print(f"{'Final Total':<32}              ${final_total:>18.2f}")
+    # Display the final total (0.00 if None)
+    final_total = final_total if final_total is not None else 0.00
+    print("=" * 70)  # Line separator for the final total
+    print(f"{'Final Total':<32}              ${final_total:>18.2f}")
+    # Concludes with the grand total, which includes the subtotal, tax, and tip.
+    # A double line separator is used to highlight the final amount.
 
 
 def place_order(pizzas, final_total, tax_amount=None, tip_amount=None):
     """
-    Save the order to a JSON file and display a confirmation message.
+    Step 9) Save the order to a JSON file and display a confirmation message.
     :param pizzas: List of pizzas in the order.
     :param final_total: Final total price including tax and tip.
     :param tax_amount: The total tax amount for the order.
     :param tip_amount: The tip amount added by the user.
     """
+    # Create an order summary dictionary
     order_data = {
         "pizzas": [
-            {"ingredients": ingredients, "subtotal": round(pizza_cost, 2)}
-            for ingredients, pizza_cost in pizzas
+            {
+                "ingredients": ingredients,  # List of ingredients for each pizza
+                "subtotal": round(pizza_cost, 2)  # Rounded subtotal for each pizza to two decimal places
+            }
+            for ingredients, pizza_cost in pizzas  # Loop through the pizzas list
         ],
-        "tax_amount": round(tax_amount, 2) if tax_amount is not None else 0.00,
-        "tip_amount": round(tip_amount, 2) if tip_amount is not None else 0.00,
-        "final_total": round(final_total, 2),
+        "tax_amount": round(tax_amount, 2) if tax_amount is not None else 0.00,  # Tax amount, 0.00 if None
+        "tip_amount": round(tip_amount, 2) if tip_amount is not None else 0.00,  # Tip amount, 0.00 if None
+        "final_total": round(final_total, 2),  # Final total, rounded to two decimals
     }
-    with open("order.json", 'w') as file:
-        json.dump(order_data, file, indent=2)
 
-    print("\nYour order has been placed! Thanks for ordering with us!")
+    # Attempt to save the order data to a JSON file
+    try:
+        with open("order.json", 'w') as file:
+            json.dump(order_data, file, indent=2)  # Save the data in a readable JSON format
+        # Display a confirmation message to the user if the file was able to be saved.
+        print("\nYour order has been placed! The details are saved in 'order.json'. Thank you!")
+    except Exception as e:
+        # Handle any unexpected errors
+        print(f"An error occurred: {e}, and was unable to save your order to 'order.json'. Reason: {e}")
+
 
 
 def view_previous_order():
     """
-    View a previously placed order by reading the order.json file.
+    Step 10) View a previously placed order by reading the order.json file.
     Displays the pizzas, their ingredients, and the totals.
     """
     try:
+        # Open the order.json file in read mode."
         with open("order.json", "r") as file:
-            order_data = json.load(file)
+            order_data = json.load(file)  # Load the JSON data
 
-        # Check if the order data is empty
+        # Check if the file contains valid order data or if the pizzas list is empty."
         if not order_data or "pizzas" not in order_data or not order_data["pizzas"]:
-            print("\nYour order is currently empty.")
+            print("\nYour order is currently empty.")  # Inform the user accordingly, if there's no data to display
             return
 
-        # Display the order summary from the JSON data
-        print("\n=== Previous Order Summary ===")
+        # Display a header for previous order summary.
+        print("\n===================== Previous Order Summary =====================")
 
-        # Display pizzas
+        # Create a for loop to display each pizza in the order, start at 1, no negative values
         for i, pizza in enumerate(order_data["pizzas"], start=1):
-            print(f"\nPizza #{i}:")
-            for ingredient in pizza["ingredients"]:
-                category, name, price = ingredient
+            print(f"\nPizza #{i}:")  # Print the pizza number to the user for clarity.
+            for ingredient in pizza["ingredients"]:  # Iterate through the list of ingredients.
+                category, name, price = ingredient  # Show the ingredient details
                 print(f"{category:<12}    {name:<20}         $ {price:>17.2f}")
-            print("-" * 70)
-            print(f"{'Subtotal':<32}             ${pizza['subtotal']:>18.2f}")
-
-        # Display tax, tip, and final total
+            print("-" * 70)  # Separator line for readability
+            print(f"{'Subtotal':<32}             ${pizza['subtotal']:>18.2f}")  # Display the pizza subtotal, for each
+        # After listing the pizzas, display the tax, tip, and final total if available.
         print("-" * 70)
-
-        # Use .get() to safely retrieve the tax amount
+        # Display tax amount, 0.00 if None
         tax_amount = order_data.get("tax_amount", 0.00)
         print(f"{'Tax Amount':<32}             ${tax_amount:>18.2f}")
-
-        # Use .get() to safely retrieve the tip amount
+        # Display tip amount if greater than 0
         tip_amount = order_data.get("tip_amount", 0.00)
         if tip_amount > 0:
             print("-" * 70)
             print(f"{'Tip':<32}             ${tip_amount:>18.2f}")
-
-        # Use .get() to safely retrieve the final total
+        # Display final total if greater than 0
         final_total = order_data.get("final_total", 0.00)
         if final_total > 0:
             print("=" * 70)
             print(f"{'Final Total':<32}             ${final_total:>18.2f}")
-
+        # Write a message to the user confirming that the order was displayed.
+        print("\nYour previous order has been successfully displayed.")
     except FileNotFoundError:
+        # Handle the case where the order.json file does not exist.
         print("\nError: No previous order found. Please place an order first.")
     except json.JSONDecodeError:
+        # Handle the case where the file content is not valid JSON.
         print("\nError: The order file is not in a valid format. Please try again.")
 
 
@@ -361,3 +416,4 @@ def restart_order():
 
 if __name__ == "__main__":
     main()
+
