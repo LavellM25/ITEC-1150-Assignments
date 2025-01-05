@@ -1,0 +1,46 @@
+{
+  "base_options": [
+    {
+      "category": "crust",
+      "options": {
+        "Thin": 10.99,
+        "Traditional": 10.99,
+        "Deep dish": 12.99,
+        "Thick": 6.5,
+        "Gluten-free": 7.0
+      }
+    },
+    {
+      "category": "sauce",
+      "options": {
+        "Traditional red": 0,
+        "Olive oil": 0,
+        "Marinara": 1.5,
+        "Alfredo": 2.0,
+        "BBQ sauce": 1.75
+      }
+    },
+    {
+      "category": "cheese",
+      "options": {
+        "Three-cheese blend": 0,
+        "Tuscan Blend": 1.99,
+        "Mozzarella": 2.0,
+        "Cheddar": 2.5,
+        "vegan": 3.0
+      }
+    }
+  ],
+  "toppings": {
+    "Pepperoni": 2.0,
+    "Sausage": 2.5,
+    "Mushrooms": 1.5,
+    "Onions": 1.25,
+    "Bell peppers": 1.5,
+    "Black olives": 1.75,
+    "Pineapple": 2.0,
+    "Bacon": 3.0,
+    "Spinach": 1.5,
+    "Jalapenos": 1.5
+  }
+}
